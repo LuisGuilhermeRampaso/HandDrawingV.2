@@ -704,6 +704,14 @@ export default function AirCanvas() {
               <div>
                 <p className="text-[10px] uppercase tracking-[0.28em] text-cyan-300/70">Air Canvas</p>
                 <p className="text-sm font-semibold text-white">Controles rapidos</p>
+                <a
+                  href="https://github.com/LuisGuilhermeRampaso"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[10px] text-white/35 transition-colors hover:text-cyan-300/70"
+                >
+                  dev. Guilherme Rampazo
+                </a>
               </div>
               <div className="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1 text-[11px] text-cyan-100/80">
                 Desenhe dentro da moldura para nao encostar no painel
