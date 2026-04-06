@@ -214,6 +214,7 @@ export default function AirCanvas() {
   const [clapFlash, setClapFlash] = useState(false);
   const [safeZone, setSafeZone] = useState<SafeZoneBounds>(createDefaultSafeZoneBounds);
   const [strokeCount, setStrokeCount] = useState(0);
+  const [showMobileSettings, setShowMobileSettings] = useState(false);
 
   const colorRef = useRef(color);
   const brushRef = useRef(brushSize);
@@ -605,27 +606,34 @@ export default function AirCanvas() {
       )}
 
       {ready && (
-        <div ref={headerRef} className="absolute top-0 left-0 right-0 flex flex-wrap items-center gap-4 border-b border-white/10 bg-black/60 px-6 py-3 backdrop-blur-sm">
-          <div className={`flex items-center gap-2 rounded-full border px-3 py-1 text-sm font-medium transition-colors ${
-            activeHands > 0
-              ? 'border-cyan-500/50 bg-cyan-500/20 text-cyan-300'
-              : 'border-gray-500/40 bg-gray-500/20 text-gray-400'
-          }`}>
-            <span className={`h-2 w-2 rounded-full ${activeHands > 0 ? 'bg-cyan-400 animate-pulse' : 'bg-gray-500'}`} />
-            {activeHands === 0 ? 'Sem mao' : activeHands === 1 ? '1 mao detectada' : '2 maos detectadas'}
-          </div>
+        <div ref={headerRef} className="absolute top-0 left-0 right-0 border-b border-white/10 bg-black/60 backdrop-blur-sm">
+          {/* ── Linha principal ── */}
+          <div className="flex items-center gap-2 px-3 py-2 md:gap-4 md:px-6 md:py-3">
+            {/* Status */}
+            <div className={`flex shrink-0 items-center gap-2 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors md:px-3 md:text-sm ${
+              activeHands > 0
+                ? 'border-cyan-500/50 bg-cyan-500/20 text-cyan-300'
+                : 'border-gray-500/40 bg-gray-500/20 text-gray-400'
+            }`}>
+              <span className={`h-2 w-2 rounded-full ${activeHands > 0 ? 'bg-cyan-400 animate-pulse' : 'bg-gray-500'}`} />
+              <span className="hidden sm:inline">
+                {activeHands === 0 ? 'Sem mao' : activeHands === 1 ? '1 mao detectada' : '2 maos detectadas'}
+              </span>
+              <span className="sm:hidden">
+                {activeHands === 0 ? 'Sem mao' : activeHands === 1 ? '1 mao' : '2 maos'}
+              </span>
+            </div>
 
-          <div className="h-6 w-px bg-white/20" />
+            <div className="hidden h-5 w-px bg-white/20 md:block" />
 
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-white/50">Cor</span>
+            {/* Cores */}
             <div className="flex gap-1">
               {COLORS.map((swatch) => (
                 <button
                   key={swatch}
                   type="button"
                   onClick={() => setColor(swatch)}
-                  className="h-6 w-6 rounded-full border-2 transition-transform hover:scale-110"
+                  className="h-5 w-5 rounded-full border-2 transition-transform hover:scale-110 md:h-6 md:w-6"
                   style={{
                     backgroundColor: swatch,
                     borderColor: color === swatch ? '#fff' : 'transparent',
@@ -635,70 +643,85 @@ export default function AirCanvas() {
                 />
               ))}
             </div>
+
+            <div className="flex-1" />
+
+            {/* Botões de ação */}
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={undoLastStroke}
+                disabled={strokeCount === 0}
+                title="Desfazer (Ctrl+Z)"
+                className="rounded-lg border border-white/15 px-2.5 py-1.5 text-xs font-medium text-white transition-colors disabled:cursor-not-allowed disabled:opacity-40 hover:bg-white/10 md:px-4 md:text-sm"
+              >
+                <span className="hidden md:inline">Desfazer</span>
+                <span className="md:hidden">↩</span>
+              </button>
+              <button
+                type="button"
+                onClick={saveImage}
+                disabled={strokeCount === 0}
+                title="Salvar PNG (Ctrl+S)"
+                className="rounded-lg border border-emerald-500/40 bg-emerald-500/20 px-2.5 py-1.5 text-xs font-medium text-emerald-200 transition-colors disabled:cursor-not-allowed disabled:opacity-40 hover:bg-emerald-500/30 md:px-4 md:text-sm"
+              >
+                <span className="hidden md:inline">Salvar PNG</span>
+                <span className="md:hidden">PNG</span>
+              </button>
+              <button
+                type="button"
+                onClick={clearCanvas}
+                title="Limpar Tela"
+                className="rounded-lg border border-red-500/50 bg-red-600/80 px-2.5 py-1.5 text-xs font-medium text-white transition-colors hover:bg-red-600 md:px-4 md:text-sm"
+              >
+                <span className="hidden md:inline">Limpar Tela</span>
+                <span className="md:hidden">✕</span>
+              </button>
+              {/* Botão de configurações — só mobile */}
+              <button
+                type="button"
+                onClick={() => setShowMobileSettings((v) => !v)}
+                title="Configurações"
+                className="rounded-lg border border-white/15 px-2.5 py-1.5 text-xs text-white/70 transition-colors hover:bg-white/10 md:hidden"
+              >
+                ⚙
+              </button>
+            </div>
           </div>
 
-          <div className="h-6 w-px bg-white/20" />
-
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-white/50">Espessura</span>
-            <input
-              type="range"
-              min={2}
-              max={30}
-              value={brushSize}
-              onChange={(event) => setBrushSize(Number(event.target.value))}
-              className="w-24 accent-cyan-400"
-            />
-            <span className="w-5 text-center text-xs text-white/70">{brushSize}</span>
-          </div>
-
-          <div className="h-6 w-px bg-white/20" />
-
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-white/50">Escurecer</span>
-            <input
-              type="range"
-              min={0}
-              max={100}
-              value={screenDim}
-              onChange={(event) => setScreenDim(Number(event.target.value))}
-              className="w-28 accent-cyan-400"
-            />
-            <span className="w-9 text-center text-xs text-white/70">{screenDim}%</span>
-          </div>
-
-          <div className="flex-1" />
-
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              onClick={undoLastStroke}
-              disabled={strokeCount === 0}
-              className="rounded-lg border border-white/15 px-4 py-1.5 text-sm font-medium text-white transition-colors disabled:cursor-not-allowed disabled:opacity-40 hover:bg-white/10"
-            >
-              Desfazer
-            </button>
-            <button
-              type="button"
-              onClick={saveImage}
-              disabled={strokeCount === 0}
-              className="rounded-lg border border-emerald-500/40 bg-emerald-500/20 px-4 py-1.5 text-sm font-medium text-emerald-200 transition-colors disabled:cursor-not-allowed disabled:opacity-40 hover:bg-emerald-500/30"
-            >
-              Salvar PNG
-            </button>
-            <button
-              type="button"
-              onClick={clearCanvas}
-              className="rounded-lg border border-red-500/50 bg-red-600/80 px-4 py-1.5 text-sm font-medium text-white transition-colors hover:bg-red-600"
-            >
-              Limpar Tela
-            </button>
+          {/* ── Sliders: sempre visíveis no desktop, colapsáveis no mobile ── */}
+          <div className={`${showMobileSettings ? 'flex' : 'hidden'} md:flex flex-wrap items-center gap-3 border-t border-white/5 px-3 pb-2.5 pt-2 md:gap-4 md:px-6 md:pb-3`}>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-white/50">Espessura</span>
+              <input
+                type="range"
+                min={2}
+                max={30}
+                value={brushSize}
+                onChange={(event) => setBrushSize(Number(event.target.value))}
+                className="w-24 accent-cyan-400"
+              />
+              <span className="w-5 text-center text-xs text-white/70">{brushSize}</span>
+            </div>
+            <div className="hidden h-5 w-px bg-white/20 md:block" />
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-white/50">Escurecer</span>
+              <input
+                type="range"
+                min={0}
+                max={100}
+                value={screenDim}
+                onChange={(event) => setScreenDim(Number(event.target.value))}
+                className="w-28 accent-cyan-400"
+              />
+              <span className="w-9 text-center text-xs text-white/70">{screenDim}%</span>
+            </div>
           </div>
         </div>
       )}
 
       {ready && (
-        <div ref={footerRef} className="absolute right-0 bottom-4 left-0 flex justify-center px-4">
+        <div ref={footerRef} className="absolute right-0 bottom-4 left-0 hidden justify-center px-4 md:flex">
           <div className="w-full max-w-4xl rounded-3xl border border-white/12 bg-gradient-to-r from-black/72 via-slate-950/78 to-black/72 px-4 py-4 shadow-[0_18px_60px_rgba(0,0,0,0.45)] backdrop-blur-md">
             <div className="mb-3 flex items-center justify-between gap-3">
               <div>
@@ -710,7 +733,7 @@ export default function AirCanvas() {
                   rel="noopener noreferrer"
                   className="text-[10px] text-white/35 transition-colors hover:text-cyan-300/70"
                 >
-                  dev. Guilherme Rampazo
+                  dev. Guilherme Rampaso
                 </a>
               </div>
               <div className="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1 text-[11px] text-cyan-100/80">
