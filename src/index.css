@@ -1,0 +1,22 @@
+@import "tailwindcss";
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background: #0a0a0a;
+  overflow: hidden;
+}
+
+#root {
+  width: 100vw;
+  height: 100vh;
+  min-height: unset;
+  max-width: unset;
+  border: none;
+  margin: 0;
+  text-align: unset;
+}
