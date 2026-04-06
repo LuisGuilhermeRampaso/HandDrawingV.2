@@ -251,7 +251,6 @@ export default function AirCanvas() {
   const [color, setColor] = useState(COLORS[0]);
   const [brushSize, setBrushSize] = useState(6);
   const [screenDim, setScreenDim] = useState(65);
-  const [videoZoom, setVideoZoom] = useState(1);
   const [activeHands, setActiveHands] = useState(0);
   const [clapFlash, setClapFlash] = useState(false);
   const [safeZone, setSafeZone] = useState<SafeZoneBounds>(createDefaultSafeZoneBounds);
@@ -536,7 +535,7 @@ export default function AirCanvas() {
     }
   }, [clearCanvas, ensureHandState, finalizeStroke, resetHandState, safeZone]);
 
-  const { videoRef, ready, error, zoomRange, setZoom } = useHandTracker({ onResults: handleResults });
+  const { videoRef, ready, error } = useHandTracker({ onResults: handleResults });
 
   useEffect(() => {
     const updateSafeZone = () => {
@@ -722,20 +721,20 @@ export default function AirCanvas() {
                 <span className="hidden md:inline">Limpar Tela</span>
                 <span className="md:hidden">✕</span>
               </button>
-              {/* Botão de configurações — só mobile */}
+              {/* Botão de configurações */}
               <button
                 type="button"
                 onClick={() => setShowMobileSettings((v) => !v)}
                 title="Configurações"
-                className="rounded-lg border border-white/15 px-2.5 py-1.5 text-xs text-white/70 transition-colors hover:bg-white/10 md:hidden"
+                className={`rounded-lg border px-2.5 py-1.5 text-xs transition-colors hover:bg-white/10 ${showMobileSettings ? 'border-cyan-400/50 text-cyan-300' : 'border-white/15 text-white/70'}`}
               >
                 ⚙
               </button>
             </div>
           </div>
 
-          {/* ── Sliders: sempre visíveis no desktop, colapsáveis no mobile ── */}
-          <div className={`${showMobileSettings ? 'flex' : 'hidden'} md:flex flex-wrap items-center gap-3 border-t border-white/5 px-3 pb-2.5 pt-2 md:gap-4 md:px-6 md:pb-3`}>
+          {/* ── Sliders: colapsáveis via engrenagem ── */}
+          <div className={`${showMobileSettings ? 'flex' : 'hidden'} flex-wrap items-center gap-3 border-t border-white/5 px-3 pb-2.5 pt-2 md:gap-4 md:px-6 md:pb-3`}>
             <div className="flex items-center gap-2">
               <span className="text-xs text-white/50">Espessura</span>
               <input
@@ -761,28 +760,6 @@ export default function AirCanvas() {
               />
               <span className="w-9 text-center text-xs text-white/70">{screenDim}%</span>
             </div>
-            {zoomRange && (
-              <>
-                <div className="hidden h-5 w-px bg-white/20 md:block" />
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-white/50">Zoom</span>
-                  <input
-                    type="range"
-                    min={zoomRange.min}
-                    max={zoomRange.max}
-                    step={zoomRange.step}
-                    value={videoZoom}
-                    onChange={(event) => {
-                      const v = Number(event.target.value);
-                      setVideoZoom(v);
-                      void setZoom(v);
-                    }}
-                    className="w-24 accent-cyan-400"
-                  />
-                  <span className="w-7 text-center text-xs text-white/70">{videoZoom.toFixed(1)}×</span>
-                </div>
-              </>
-            )}
           </div>
         </div>
       )}
