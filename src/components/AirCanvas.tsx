@@ -251,6 +251,7 @@ export default function AirCanvas() {
   const [color, setColor] = useState(COLORS[0]);
   const [brushSize, setBrushSize] = useState(6);
   const [screenDim, setScreenDim] = useState(65);
+  const [videoZoom, setVideoZoom] = useState(1);
   const [activeHands, setActiveHands] = useState(0);
   const [clapFlash, setClapFlash] = useState(false);
   const [safeZone, setSafeZone] = useState<SafeZoneBounds>(createDefaultSafeZoneBounds);
@@ -535,7 +536,7 @@ export default function AirCanvas() {
     }
   }, [clearCanvas, ensureHandState, finalizeStroke, resetHandState, safeZone]);
 
-  const { videoRef, ready, error } = useHandTracker({ onResults: handleResults });
+  const { videoRef, ready, error, zoomRange, setZoom } = useHandTracker({ onResults: handleResults });
 
   useEffect(() => {
     const updateSafeZone = () => {
@@ -760,6 +761,28 @@ export default function AirCanvas() {
               />
               <span className="w-9 text-center text-xs text-white/70">{screenDim}%</span>
             </div>
+            {zoomRange && (
+              <>
+                <div className="hidden h-5 w-px bg-white/20 md:block" />
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-white/50">Zoom</span>
+                  <input
+                    type="range"
+                    min={zoomRange.min}
+                    max={zoomRange.max}
+                    step={zoomRange.step}
+                    value={videoZoom}
+                    onChange={(event) => {
+                      const v = Number(event.target.value);
+                      setVideoZoom(v);
+                      void setZoom(v);
+                    }}
+                    className="w-24 accent-cyan-400"
+                  />
+                  <span className="w-7 text-center text-xs text-white/70">{videoZoom.toFixed(1)}×</span>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}
