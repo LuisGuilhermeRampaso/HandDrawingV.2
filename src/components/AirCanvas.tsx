@@ -56,6 +56,43 @@ interface SafeZoneBounds {
   topPx: number;
 }
 
+/**
+ * Remapeia coordenadas normalizadas do landmark para coordenadas internas do canvas,
+ * levando em conta o object-fit:cover do vídeo.
+ * Sem isso, em containers não-16:9 (mobile portrait) o esqueleto fica desalinhado.
+ */
+function landmarkToCanvas(
+  nx: number,
+  ny: number,
+  containerW: number,
+  containerH: number,
+): { x: number; y: number } {
+  const videoAspect = CANVAS_W / CANVAS_H;
+  const containerAspect = containerW / containerH;
+
+  let scale: number;
+  let offsetX = 0;
+  let offsetY = 0;
+
+  if (containerAspect < videoAspect) {
+    // Container mais alto que o vídeo → escala pela altura, recorta os lados
+    scale = containerH / CANVAS_H;
+    offsetX = (containerW - CANVAS_W * scale) / 2;
+  } else {
+    // Container mais largo que o vídeo → escala pela largura, recorta cima/baixo
+    scale = containerW / CANVAS_W;
+    offsetY = (containerH - CANVAS_H * scale) / 2;
+  }
+
+  const cssPx = nx * CANVAS_W * scale + offsetX;
+  const cssPy = ny * CANVAS_H * scale + offsetY;
+
+  return {
+    x: cssPx * (CANVAS_W / containerW),
+    y: cssPy * (CANVAS_H / containerH),
+  };
+}
+
 function createHandState(): HandState {
   return {
     currentStroke: null,
@@ -88,13 +125,15 @@ function isPointInsideSafeZone(point: Point, safeZone: SafeZoneBounds) {
 function drawHandSkeleton(
   ctx: CanvasRenderingContext2D,
   landmarks: { x: number; y: number }[],
-  w: number,
-  h: number,
+  containerW: number,
+  containerH: number,
   isDrawingMode: boolean,
 ) {
   const connections = HandLandmarker.HAND_CONNECTIONS;
   const lineColor = isDrawingMode ? '#00e5ff' : '#888888';
   const glowColor = isDrawingMode ? SKELETON_COLOR : '#555555';
+  const toCanvas = (lm: { x: number; y: number }) =>
+    landmarkToCanvas(lm.x, lm.y, containerW, containerH);
 
   ctx.strokeStyle = lineColor;
   ctx.lineWidth = 2;
@@ -103,30 +142,31 @@ function drawHandSkeleton(
   ctx.globalAlpha = 0.85;
 
   for (const conn of connections) {
-    const a = landmarks[conn.start];
-    const b = landmarks[conn.end];
+    const a = toCanvas(landmarks[conn.start]);
+    const b = toCanvas(landmarks[conn.end]);
     ctx.beginPath();
-    ctx.moveTo(a.x * w, a.y * h);
-    ctx.lineTo(b.x * w, b.y * h);
+    ctx.moveTo(a.x, a.y);
+    ctx.lineTo(b.x, b.y);
     ctx.stroke();
   }
 
   ctx.globalAlpha = 1;
   ctx.shadowBlur = 14;
   for (const lm of landmarks) {
+    const p = toCanvas(lm);
     ctx.beginPath();
     ctx.fillStyle = '#ffffff';
     ctx.shadowColor = glowColor;
-    ctx.arc(lm.x * w, lm.y * h, 3, 0, Math.PI * 2);
+    ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
     ctx.fill();
   }
 
-  const tip = landmarks[8];
+  const tip = toCanvas(landmarks[8]);
   ctx.beginPath();
   ctx.fillStyle = isDrawingMode ? '#ffff00' : '#aaaaaa';
   ctx.shadowColor = isDrawingMode ? '#ffff00' : '#777777';
   ctx.shadowBlur = 18;
-  ctx.arc(tip.x * w, tip.y * h, 7, 0, Math.PI * 2);
+  ctx.arc(tip.x, tip.y, 7, 0, Math.PI * 2);
   ctx.fill();
 
   ctx.shadowBlur = 0;
@@ -206,6 +246,7 @@ export default function AirCanvas() {
   });
   const strokesRef = useRef<Stroke[]>([]);
   const particlesRef = useRef<Particle[]>([]);
+  const containerDimRef = useRef({ w: CANVAS_W, h: CANVAS_H });
 
   const [color, setColor] = useState(COLORS[0]);
   const [brushSize, setBrushSize] = useState(6);
@@ -435,10 +476,12 @@ export default function AirCanvas() {
       const handState = ensureHandState(handKey);
       const drawGestureActive = shouldDraw(landmarks);
 
-      drawHandSkeleton(hCtx, landmarks, CANVAS_W, CANVAS_H, drawGestureActive);
+      const { w: cw, h: ch } = containerDimRef.current;
+      drawHandSkeleton(hCtx, landmarks, cw, ch, drawGestureActive);
 
       const tip = landmarks[8];
-      const smoothed = handState.smoother.push(tip.x * CANVAS_W, tip.y * CANVAS_H);
+      const mappedTip = landmarkToCanvas(tip.x, tip.y, cw, ch);
+      const smoothed = handState.smoother.push(mappedTip.x, mappedTip.y);
       const drawing = drawGestureActive && isPointInsideSafeZone(smoothed, safeZone);
 
       if (drawing) {
@@ -498,6 +541,7 @@ export default function AirCanvas() {
     const updateSafeZone = () => {
       const rootRect = rootRef.current?.getBoundingClientRect();
       if (!rootRect || rootRect.width === 0 || rootRect.height === 0) return;
+      containerDimRef.current = { w: rootRect.width, h: rootRect.height };
 
       const headerHeight = headerRef.current?.getBoundingClientRect().height ?? 0;
       const footerHeight = footerRef.current?.getBoundingClientRect().height ?? 0;
