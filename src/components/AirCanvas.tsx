@@ -122,6 +122,23 @@ function isPointInsideSafeZone(point: Point, safeZone: SafeZoneBounds) {
   );
 }
 
+/**
+ * Retorna o fator de escala para tamanhos de desenho (lineWidth, raios, blur)
+ * de forma que apareçam com tamanho consistente em qualquer resolução de container.
+ * No mobile portrait o canvas é muito comprimido horizontalmente — sem isso,
+ * linhas e círculos ficam microscópicos.
+ */
+function getDrawScale(containerW: number, containerH: number): number {
+  const videoAspect = CANVAS_W / CANVAS_H;
+  const containerAspect = containerW / containerH;
+  if (containerAspect < videoAspect) {
+    // Portrait: canvas comprimido no eixo X
+    return CANVAS_W / containerW;
+  }
+  // Landscape/desktop: canvas pode estar comprimido no eixo Y
+  return CANVAS_H / containerH;
+}
+
 function drawHandSkeleton(
   ctx: CanvasRenderingContext2D,
   landmarks: { x: number; y: number }[],
@@ -134,11 +151,12 @@ function drawHandSkeleton(
   const glowColor = isDrawingMode ? SKELETON_COLOR : '#555555';
   const toCanvas = (lm: { x: number; y: number }) =>
     landmarkToCanvas(lm.x, lm.y, containerW, containerH);
+  const s = getDrawScale(containerW, containerH);
 
   ctx.strokeStyle = lineColor;
-  ctx.lineWidth = 2;
+  ctx.lineWidth = 2 * s;
   ctx.shadowColor = glowColor;
-  ctx.shadowBlur = isDrawingMode ? 10 : 4;
+  ctx.shadowBlur = (isDrawingMode ? 10 : 4) * s;
   ctx.globalAlpha = 0.85;
 
   for (const conn of connections) {
@@ -151,13 +169,13 @@ function drawHandSkeleton(
   }
 
   ctx.globalAlpha = 1;
-  ctx.shadowBlur = 14;
+  ctx.shadowBlur = 14 * s;
   for (const lm of landmarks) {
     const p = toCanvas(lm);
     ctx.beginPath();
     ctx.fillStyle = '#ffffff';
     ctx.shadowColor = glowColor;
-    ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+    ctx.arc(p.x, p.y, 3 * s, 0, Math.PI * 2);
     ctx.fill();
   }
 
@@ -165,8 +183,8 @@ function drawHandSkeleton(
   ctx.beginPath();
   ctx.fillStyle = isDrawingMode ? '#ffff00' : '#aaaaaa';
   ctx.shadowColor = isDrawingMode ? '#ffff00' : '#777777';
-  ctx.shadowBlur = 18;
-  ctx.arc(tip.x, tip.y, 7, 0, Math.PI * 2);
+  ctx.shadowBlur = 18 * s;
+  ctx.arc(tip.x, tip.y, 7 * s, 0, Math.PI * 2);
   ctx.fill();
 
   ctx.shadowBlur = 0;
